@@ -1,7 +1,7 @@
-import { memo } from 'react';
+import { memo } from "react"
 
 function LeftSideLayout1() {
-  return <></>;
+  return <></>
 }
 
-export default memo(LeftSideLayout1);
+export default memo(LeftSideLayout1)

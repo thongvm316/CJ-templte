@@ -1,5 +1,6 @@
 import { configureStore } from "@reduxjs/toolkit"
 import createReducer from "./rootReducer"
+import apiMiddleware from "./apiConfigRTK/apiMiddleware"
 
 if (process.env.NODE_ENV === "development" && module.hot) {
   module.hot.accept("./rootReducer", () => {
@@ -8,7 +9,7 @@ if (process.env.NODE_ENV === "development" && module.hot) {
   })
 }
 
-const middlewares = []
+const middlewares = [...apiMiddleware]
 
 if (process.env.NODE_ENV === "development") {
   const { createLogger } = require(`redux-logger`)

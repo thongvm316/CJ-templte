@@ -1,47 +1,64 @@
+import { useEffect } from "react"
 import { yupResolver } from "@hookform/resolvers/yup"
 import { motion } from "framer-motion"
 import { Controller, useForm } from "react-hook-form"
-import Button from "@mui/material/Button"
-import Card from "@mui/material/Card"
-import CardContent from "@mui/material/CardContent"
-import Checkbox from "@mui/material/Checkbox"
-import FormControl from "@mui/material/FormControl"
-import FormControlLabel from "@mui/material/FormControlLabel"
-import TextField from "@mui/material/TextField"
-import Typography from "@mui/material/Typography"
 import { Link } from "react-router-dom"
+
 import * as yup from "yup"
 import _ from "@lodash"
 
-/**
- * Form Validation Schema
- */
+import Button from "@mui/material/Button"
+import Card from "@mui/material/Card"
+import CardContent from "@mui/material/CardContent"
+import TextField from "@mui/material/TextField"
+import Typography from "@mui/material/Typography"
+
+import { useSelector, useDispatch } from "react-redux"
+import { useLoginMutation } from "app/services/api/auth"
+import { useGetMenuListMutation } from "app/services/api/menuLookup"
+import { submitLogin, loading } from "app/auth/store/loginSlice"
+import { showMessage } from "app/store/fuse/messageSlice"
+
 const schema = yup.object().shape({
-  email: yup.string().email("You must enter a valid email").required("You must enter a email"),
+  id: yup.string().required("You must enter a user name"),
   password: yup
     .string()
     .required("Please enter your password.")
-    .min(8, "Password is too short - should be 8 chars minimum."),
+    .min(6, "Password is too short - should be 6 chars minimum."),
 })
 
 const defaultValues = {
-  email: "",
+  id: "",
   password: "",
-  remember: true,
 }
 
 function LoginPage() {
-  const { control, formState, handleSubmit, reset } = useForm({
+  const {
+    auth: {
+      login: { errors: errorsState, isLoading },
+    },
+  } = useSelector((state) => state)
+
+  const [login] = useLoginMutation()
+  const [getMenuList] = useGetMenuListMutation()
+  const dispatch = useDispatch()
+
+  const { control, formState, handleSubmit, reset, setError } = useForm({
     mode: "onChange",
     defaultValues,
     resolver: yupResolver(schema),
   })
-
   const { isValid, dirtyFields, errors } = formState
 
-  function onSubmit() {
-    reset(defaultValues)
+  const onSubmit = (formData) => {
+    dispatch(submitLogin(formData, login, getMenuList, loading))
   }
+
+  useEffect(() => {
+    if (errorsState) {
+      dispatch(showMessage({ message: errorsState.message, variant: "error" }))
+    }
+  }, [errorsState, dispatch])
 
   return (
     <div className="flex flex-col flex-auto items-center justify-center p-16 sm:p-32">
@@ -62,17 +79,17 @@ function LoginPage() {
                 onSubmit={handleSubmit(onSubmit)}
               >
                 <Controller
-                  name="email"
+                  name="id"
                   control={control}
                   render={({ field }) => (
                     <TextField
                       {...field}
                       className="mb-16"
-                      label="Email"
+                      label="User"
                       autoFocus
-                      type="email"
-                      error={!!errors.email}
-                      helperText={errors?.email?.message}
+                      type="text"
+                      error={!!errors.id}
+                      helperText={errors?.id?.message}
                       variant="outlined"
                       required
                       fullWidth
@@ -99,16 +116,6 @@ function LoginPage() {
                 />
 
                 <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between">
-                  <Controller
-                    name="remember"
-                    control={control}
-                    render={({ field }) => (
-                      <FormControl>
-                        <FormControlLabel label="Remember Me" control={<Checkbox {...field} />} />
-                      </FormControl>
-                    )}
-                  />
-
                   <Link className="font-normal" to="/pages/auth/forgot-password">
                     Forgot Password?
                   </Link>
@@ -119,7 +126,7 @@ function LoginPage() {
                   color="primary"
                   className="w-224 mx-auto mt-16"
                   aria-label="LOG IN"
-                  disabled={_.isEmpty(dirtyFields) || !isValid}
+                  disabled={_.isEmpty(dirtyFields) || !isValid || isLoading}
                   type="submit"
                 >
                   Login
